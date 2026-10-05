@@ -1,0 +1,8 @@
+google-genai
+google-api-python-client
+google-auth-oauthlib
+gspread
+pydantic
+tenacity
+requests
+dnspython
