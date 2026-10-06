@@ -6,21 +6,21 @@ SHEET_ID = os.getenv("SHEET_ID", "")
 SA_FILE = os.getenv("GOOGLE_SA_FILE", "service_account.json")   # Google service account key
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "")                 # optional
 WRITER_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")      # check AI Studio for current names
-JUDGE_MODEL = os.getenv("GEMINI_JUDGE_MODEL", "gemini-2.5-pro")   # stronger model reviews the writer
+JUDGE_MODEL = os.getenv("GEMINI_JUDGE_MODEL", "gemini-2.5-flash")  # use a model with available free-tier quota
 
 EVENT = {
-    "org": "YOUR_UNIVERSITY Hackathon",
-    "sender_name": "YOUR_NAME",
+    "org": "RIT Hackathon",
+    "sender_name": "AIRC",
     "sender_title": "Lead Organizer",
-    "dates": "YOUR_DATES (e.g. March 14-16, 2027)",
-    "attendees": "YOUR_ATTENDEE_COUNT student developers",
-    "pitch": "YOUR_ONE_SENTENCE_DESCRIPTION_OF_THE_EVENT",
-    "website": "https://YOUR_SITE",
+    "dates": ", January 20-22 (2027)",
+    "attendees": "200 student developers",
+    "pitch": "Inter-university hackathon with a focus on AI and emerging technologies.",
+    "website": "https://rit-hackathon.example.com",
     "tiers": {
-        "Gold": "YOUR_GOLD_BENEFITS_AND_PRICE",
-        "Silver": "YOUR_SILVER_BENEFITS_AND_PRICE",
-        "Bronze": "YOUR_BRONZE_BENEFITS_AND_PRICE",
-        "In-Kind": "YOUR_IN_KIND_DESCRIPTION",
+        "Gold": "",
+        "Silver": "",
+        "Bronze": "",
+        "In-Kind": "",
     },
 }
 
