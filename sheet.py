@@ -7,7 +7,7 @@ from gspread.utils import rowcol_to_a1
 
 import config
 
-COLS = ["Company", "Tier", "Focus", "Domain", "Contact Name", "Contact Title", "Email", "Email Source",
+COLS = ["Company", "Focus", "Domain", "Contact Name", "Contact Title", "Email", "Email Source",
         "Status", "Approval", "Subject", "Body", "Guardrail Result", "Judge Score", "Research Facts",
         "Reviewer Notes", "Reply Snippet", "Draft ID", "Thread ID", "Drafted At", "Sent At",
         "Followups", "Updated At"]

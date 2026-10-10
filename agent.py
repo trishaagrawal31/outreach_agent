@@ -246,7 +246,7 @@ def main():
     store = Store()
     if a.command == "setup":
         store.setup()
-        log.info("Sheet ready. Add rows to the Leads tab (Company, Tier, Focus; Domain optional).")
+        log.info("Sheet ready. Add rows to the Leads tab (Company, Focus; Domain optional).")
         return
     cfg = store.config()
     if cfg["PAUSE"].upper() == "TRUE":

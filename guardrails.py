@@ -51,6 +51,8 @@ def check_email(subject: str, body: str, lead: dict, allowed_text: str,
     if FOOTER not in body:
         p.append("opt-out line missing")
     main = body.replace(FOOTER, "").strip()
+    if "\n\n" not in main and "\r\n\r\n" not in main:
+        p.append("email body is missing paragraph breaks")
     words = len(main.split())
     lo, hi = (60, 150) if kind == "initial" else (8, 70)
     if not lo <= words <= hi:

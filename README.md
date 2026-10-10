@@ -3,7 +3,7 @@
 Google Sheet = shared database + review UI. Python = pipeline. Gemini = research/writing/review. Gmail = delivery.
 
 ```
-Sheet row (Company, Tier, Focus)
+Sheet row (Company, Focus)
   -> discover   find + verify a contact (public pages / Hunter / teammates)
   -> draft      grounded research -> write -> deterministic checks -> AI judge (1 auto-rewrite)
   -> [HUMAN]    teammate reads in the sheet, edits freely, sets Approval = Approve
@@ -23,7 +23,7 @@ Sheet row (Company, Tier, Focus)
    `export SHEET_ID=<id from the sheet URL>`
 5. Edit `EVENT` in `config.py`. The AI may state only what is in there. The agent refuses to run until every `YOUR_` placeholder is gone.
 6. Optional: `export HUNTER_API_KEY=...` (free plan is small; see notes).
-7. `python agent.py setup`, then add rows to the **Leads** tab: Company, Tier, Focus (Domain optional but makes discovery more reliable).
+7. `python agent.py setup`, then add rows to the **Leads** tab: Company, Focus (Domain optional but makes discovery more reliable).
 
 ## Daily use
 `python agent.py run` (or schedule it: cron / GitHub Actions / a teammate's laptop).

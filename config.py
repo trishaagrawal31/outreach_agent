@@ -16,12 +16,6 @@ EVENT = {
     "attendees": "200 student developers",
     "pitch": "Inter-university hackathon with a focus on AI and emerging technologies.",
     "website": "https://rit-hackathon.example.com",
-    "tiers": {
-        "Gold": "",
-        "Silver": "",
-        "Bronze": "",
-        "In-Kind": "",
-    },
 }
 
 # Defaults for the Config tab in the sheet (teammates can change them there, no redeploy).
