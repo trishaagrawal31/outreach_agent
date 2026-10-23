@@ -1,6 +1,6 @@
 # Hackathon Sponsor Outreach Agent (v2)
 
-Google Sheet = shared database + review UI. Python = pipeline. Gemini = research/writing/review. Gmail = delivery.
+Google Sheet = shared database + review UI. Python = pipeline. Gemini = grounded research and primary generation, with optional Groq fallback. Gmail = delivery.
 
 ```
 Sheet row (Company, Focus)
@@ -15,21 +15,24 @@ Sheet row (Company, Focus)
 ## One-time setup (about 30 min)
 1. `pip install -r requirements.txt` (Python 3.10+)
 2. **Gemini**: key from https://aistudio.google.com -> `export GEMINI_API_KEY=...`
-3. **Google Cloud project** (free): enable *Google Sheets API*, *Google Drive API* and *Gmail API*.
+   - Place the proposal PDF at `Hackathon_Proposal.pdf` in the project folder, or set `PROPOSAL_FILE` to its path. Approved initial emails attach this PDF.
+3. Optional **Groq fallback**: set `GROQ_API_KEY` and optionally `GROQ_MODEL`. In PowerShell, for example: `$env:GROQ_API_KEY = "your-key"`. For research/contact searches, Gemini is preferred; if unavailable and a company domain is known, the app fetches source pages from that domain and uses Groq to extract structured results.
+4. **Google Cloud project** (free): enable *Google Sheets API*, *Google Drive API* and *Gmail API*.
    - Service account -> download JSON key as `service_account.json`.
    - OAuth client (type *Desktop app*) -> download as `credentials.json` (Gmail; first run opens a browser).
    - OAuth consent screen: add yourself (and teammates who run it) as test users.
-4. Create a blank Google Sheet, **share it (Editor) with the service account's email**, then
+5. Create a blank Google Sheet, **share it (Editor) with the service account's email**, then
    `export SHEET_ID=<id from the sheet URL>`
-5. Edit `EVENT` in `config.py`. The AI may state only what is in there. The agent refuses to run until every `YOUR_` placeholder is gone.
-6. Optional: `export HUNTER_API_KEY=...` (free plan is small; see notes).
-7. `python agent.py setup`, then add rows to the **Leads** tab: Company, Focus (Domain optional but makes discovery more reliable).
+6. Edit `EVENT` in `config.py`. The AI may state only what is in there. The agent refuses to run until every `YOUR_` and bracketed placeholder is replaced.
+7. Optional: `export HUNTER_API_KEY=...` (free plan is small; see notes).
+8. `python agent.py setup`, then add rows to the **Leads** tab: Company, Focus (Domain optional but makes discovery more reliable).
 
 ## Daily use
 `python agent.py run` (or schedule it: cron / GitHub Actions / a teammate's laptop).
 Team: review rows with Status `READY_FOR_REVIEW`, fix the Body if needed, set **Approval** to Approve or Reject. Then `python agent.py publish` (or the next `run`) creates Gmail drafts.
 
 Start with `python agent.py run --limit 3` and your own address as a test lead.
+Drafts blocked by generated-content checks are retried on the next `draft` or `run`; a regenerated draft needs fresh human approval. Contact or research blocks still require manual resolution.
 
 ## Guardrails (layered)
 | Layer | What it blocks |
@@ -44,5 +47,7 @@ Start with `python agent.py run --limit 3` and your own address as a test lead.
 ## Notes
 - Hunter and Apollo free tiers are small and change; verify limits and API access on their pricing pages. Hunter's free plan was ~50 credits/month in recent listings.
 - Business emails of individuals can still be personal data. Prefer role addresses (sponsorship@, university@), follow your university's solicitation policy and local privacy law.
-- Models: `GEMINI_MODEL` / `GEMINI_JUDGE_MODEL` env vars; check AI Studio for names available on your free tier.
+- Gemini defaults to `gemini-2.5-flash` for both writing and judging. `GEMINI_MODEL` / `GEMINI_JUDGE_MODEL` environment variables override these defaults.
+- If `GROQ_API_KEY` is set, structured Gemini calls fall back to Groq after Gemini errors. When Gemini search grounding is unavailable, the app can fall back to pages fetched from the known company domain; without a known domain, grounded research cannot safely fall back.
+- Initial sponsor emails state the first-edition opportunity, sponsor benefits, one company-specific reason, attached proposal, a single challenge-problem question, and the configured sender placeholders. Draft creation attaches the configured proposal PDF.
 - Untested against live APIs. Run the 3-lead test first.

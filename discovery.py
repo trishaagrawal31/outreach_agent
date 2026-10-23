@@ -56,7 +56,7 @@ def find_contact(lead, state):
     text, pages = llm.grounded_pages(
         f"Find public contact details (email addresses) for the university relations, campus recruiting, "
         f"sponsorship, community or partnerships team at {company} ({domain}). Include names and job titles "
-        f"of relevant people if they are public.")
+        f"of relevant people if they are public.", fallback_domain=domain)
     for url in (f"https://{domain}/contact", f"https://{domain}/"):
         pages.append(fetch(url))
     for url, html in pages:

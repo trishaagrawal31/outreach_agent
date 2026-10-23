@@ -86,7 +86,11 @@ def stage_draft(store, cfg, limit):
     rows = store.rows()
     active = {domain_of(r) for r in rows if r["Status"] in ACTIVE and domain_of(r)}
     for lead in rows:
-        if lead["Status"] != "CONTACT_READY":
+        retry_blocked_draft = (
+            lead["Status"] == "BLOCKED"
+            and lead["Guardrail Result"].startswith("BLOCKED: ")
+        )
+        if lead["Status"] != "CONTACT_READY" and not retry_blocked_draft:
             continue
         if n >= limit:
             break
@@ -104,7 +108,7 @@ def stage_draft(store, cfg, limit):
             allowed = config.allowed_text() + " " + " ".join(f["statement"] for f in facts)
 
             feedback, subject, body, verdict, problems = None, "", "", None, []
-            for attempt in range(2):  # one automatic rewrite using the reviewers' feedback
+            for attempt in range(5):  # let the AI self-correct on guardrail feedback before blocking
                 d = llm.write_email(lead, facts, feedback)
                 subject, body = d.subject.strip(), d.body.strip() + "\n\n" + g.FOOTER
                 problems = g.check_email(subject, body, lead, allowed, ev["website"])
@@ -123,11 +127,16 @@ def stage_draft(store, cfg, limit):
             else:
                 result, status = f"PASS (judge {score}/10): {verdict.summary}", "READY_FOR_REVIEW"
             store.update(row, {"Subject": subject, "Body": body, "Research Facts": fact_cell,
-                               "Guardrail Result": result, "Judge Score": score, "Status": status})
+                               "Guardrail Result": result, "Judge Score": score, "Status": status,
+                               "Approval": ""})
             store.log(lead["Company"], "draft " + status, result)
         except Exception as e:
             log.exception("draft failed: %s", lead["Company"])
             store.log(lead["Company"], "draft error", e)
+            if "Gemini API quota exhausted" in str(e):
+                store.update(row, {"Status": "BLOCKED", "Guardrail Result": "Gemini API quota exhausted; please wait for the free-tier reset or add billing."})
+                log.error("Stopping draft stage because Gemini quota is exhausted.")
+                break
 
 
 # ---------------------------------------------------------------- publish
@@ -163,7 +172,9 @@ def stage_publish(store, cfg, dry):
         if dry:
             log.info("[dry-run] would draft for %s", lead["Company"])
             continue
-        did, tid = mailer.create_draft(svc, lead["Email"], lead["Subject"], lead["Body"])
+        did, tid = mailer.create_draft(
+            svc, lead["Email"], lead["Subject"], lead["Body"],
+            attachments=[config.PROPOSAL_FILE])
         fields = {"Status": "DRAFTED", "Draft ID": did, "Thread ID": tid, "Drafted At": now()}
         if send_mode and business_hours():
             mailer.send_draft(svc, did)

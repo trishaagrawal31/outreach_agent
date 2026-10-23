@@ -1,8 +1,10 @@
 """Gmail via official API (OAuth). Draft, send, and inspect threads."""
 import base64
 import datetime as dt
+import mimetypes
 import os
 from email.message import EmailMessage
+from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -27,12 +29,19 @@ def service():
     return build("gmail", "v1", credentials=creds)
 
 
-def create_draft(svc, to, subject, body, thread_id=None, in_reply_to=None):
+def create_draft(svc, to, subject, body, thread_id=None, in_reply_to=None, attachments=None):
     msg = EmailMessage()
     msg["To"], msg["Subject"] = to, subject
     if in_reply_to:
         msg["In-Reply-To"] = msg["References"] = in_reply_to
     msg.set_content(body)
+    for attachment in attachments or []:
+        path = Path(attachment)
+        if not path.is_file():
+            raise FileNotFoundError(f"Email attachment does not exist: {path}")
+        content_type, _ = mimetypes.guess_type(path.name)
+        maintype, subtype = (content_type or "application/octet-stream").split("/", 1)
+        msg.add_attachment(path.read_bytes(), maintype=maintype, subtype=subtype, filename=path.name)
     payload = {"message": {"raw": base64.urlsafe_b64encode(msg.as_bytes()).decode()}}
     if thread_id:
         payload["message"]["threadId"] = thread_id

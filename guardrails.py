@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 import dns.resolver
 
 FOOTER = "If this isn't relevant, just reply 'no thanks' and I won't follow up."
+INITIAL_WORD_LIMIT = 159
+INITIAL_MIN_WORDS = 60
 
 FREEMAIL = {"gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com",
             "proton.me", "protonmail.com", "aol.com", "live.com", "msn.com"}
@@ -13,9 +15,14 @@ EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
 BANNED = ["hope this email finds you well", "revolutionary", "game-changing", "game changing",
           "synergy", "guarantee", "act now", "limited time", "click here", "dear sir",
           "to whom it may concern", "once in a lifetime", "huge opportunity", "i came across your"]
-PLACEHOLDER_RE = re.compile(r"\[[^\]]*\]|\{[^}]*\}|<[^>]*>|YOUR_|TODO|lorem ipsum|XXX", re.I)
+PLACEHOLDER_RE = re.compile(r"\{[^}]*\}|<[^>]*>|\[[^\]]+\]|YOUR_|TODO|lorem ipsum|XXX", re.I)
 URL_RE = re.compile(r"https?://[^\s)>\]]+|www\.[^\s)>\]]+")
+EM_DASH_RE = re.compile(r"[\u2012\u2013\u2014\u2015]")
 ALWAYS_OK_NUMBERS = {"15"}  # "15-minute call"
+
+
+def _safe_text_for_placeholder_scan(text: str) -> str:
+    return re.sub(r"\[[^\]]+\]\([^)]*\)", " ", text)
 
 
 def check_contact(email: str, dnc: set) -> list:
@@ -53,15 +60,46 @@ def check_email(subject: str, body: str, lead: dict, allowed_text: str,
     main = body.replace(FOOTER, "").strip()
     if "\n\n" not in main and "\r\n\r\n" not in main:
         p.append("email body is missing paragraph breaks")
-    words = len(main.split())
-    lo, hi = (60, 150) if kind == "initial" else (8, 70)
+    words = len(body.split())
+    lo, hi = (INITIAL_MIN_WORDS, INITIAL_WORD_LIMIT) if kind == "initial" else (8, 70)
     if not lo <= words <= hi:
         p.append(f"body is {words} words (allowed {lo}-{hi})")
 
-    if PLACEHOLDER_RE.search(subject + " " + main):
+    if kind == "initial":
+        markdown = re.search(
+            r"\*\*|__|(?<!\*)\*(?!\*)|(?<!_)_(?!_)|\[[^\]]+\]\(|^\s{0,3}#{1,6}\s",
+            body, re.M)
+        if markdown:
+            p.append("markdown formatting is not allowed")
+        if "?" not in body or body.count("?") != 1 or "challenge problem" not in body.lower():
+            p.append("include exactly one question asking about a challenge problem")
+        if re.search(r"\b(call|meeting)\b", body, re.I):
+            p.append("do not ask for a call or meeting")
+        if "first" not in subject.lower() or "rit hackathon" not in subject.lower():
+            p.append("subject must identify the first RIT Hackathon")
+        if not all(token.lower() in subject.lower() for token in ("jan", "20", "22", "2027")):
+            p.append("subject must include the event date")
+        low_body = body.lower()
+        if "first edition" not in low_body and "first hackathon" not in low_body:
+            p.append("state that this is the first edition")
+        if not all(term in low_body for term in ("track", "prize", "shape")):
+            p.append("explain that early sponsors can shape the tracks and prizes")
+        if "recruit" not in low_body:
+            p.append("state the student recruiting benefit")
+        if not any(term in low_body for term in ("mentor", "judg")):
+            p.append("state the mentoring or judging benefit")
+        if "challenge" not in low_body:
+            p.append("state the challenge-setting benefit")
+        if "proposal" not in low_body or "attach" not in low_body:
+            p.append("mention that the proposal is attached")
+
+    placeholder_scan = _safe_text_for_placeholder_scan(subject + " " + main)
+    if PLACEHOLDER_RE.search(placeholder_scan):
         p.append("unfilled placeholder / template text found")
     low = (subject + " " + main).lower()
     p += [f"banned phrase: '{b}'" for b in BANNED if b in low]
+    if EM_DASH_RE.search(subject + " " + main):
+        p.append("em dash detected: use plain hyphen or punctuation instead")
     if (subject + main).count("!") > 1:
         p.append("too many exclamation marks")
 
